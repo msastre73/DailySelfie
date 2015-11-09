@@ -14,7 +14,7 @@ public class SelfieItem {
     private String title;
     //Path to the full image saved by the cam
     private File fullImage;
-    //Button to delete the current
+
 
     //Constructor
      public SelfieItem(File fullImage, Bitmap thumb, String title) {

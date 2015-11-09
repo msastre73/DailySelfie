@@ -1,7 +1,10 @@
 package com.coursera.marcossastre.dailyselfie;
 
+import android.app.ListActivity;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -23,25 +26,29 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.SimpleFormatter;
 
-public class DailySelfieActivity extends AppCompatActivity {
+public class DailySelfieActivity extends ListActivity{
     //Code for the cam request
     static final int REQUEST_IMAGE_CAPTURE = 1;
+    //Folder name where pics are saved in the sd
+    static final String DIR_NAME = "DailySelfie_ByMarcos";
     //TAG for Log
     private static final String TAG = "Lab-Graphics";
 
 
-    private ImageView mPicCaptured;
-    private String mCurrentPhotoPath;
+    private SelfieListAdapter mSelfieAdapter;
+    //file created when the FloatinActionButton is clicked, then passes to the SelfiItem
+    //created in onActivityResult
+    private File mCurrentFile;
+    private String mCurrentFilePath;
+    private float mLayoutHeigt;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_daily_selfie);
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
+        mSelfieAdapter = new SelfieListAdapter(getApplicationContext());
 
-        mPicCaptured = (ImageView) findViewById(R.id.picCaptured);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -53,12 +60,14 @@ public class DailySelfieActivity extends AppCompatActivity {
 
             }
         });
+
+        getListView().setAdapter(mSelfieAdapter);
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.goto_camera, menu);
+        getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
 
@@ -70,14 +79,14 @@ public class DailySelfieActivity extends AppCompatActivity {
         int id = item.getItemId();
 
         //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
+        if (id == R.id.delte_all) {
             return true;
         }
 
         return super.onOptionsItemSelected(item);
     }
 
-    //Set the returned Thumb to the ImageView
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
@@ -85,9 +94,29 @@ public class DailySelfieActivity extends AppCompatActivity {
 
         if(requestCode== REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK){
             Log.i(TAG, "Intent returned with result OK");
-            Bundle extras = data.getExtras();
-            Bitmap returnedImage = (Bitmap) extras.get("data");
-            mPicCaptured.setImageBitmap(returnedImage);
+
+            //Creates the image for the thumb from the saved pic
+            //174 is the width and height of the thumb provided by the cam
+            Bitmap returnedImage = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
+            //When I create the Bitmap thumb it cames rotated (I don't know why)
+            //So I have to rotate it back
+            Matrix matrix = new Matrix();
+            matrix.postRotate(-90f);
+            returnedImage = Bitmap.createBitmap(returnedImage,0,0,
+                    returnedImage.getWidth(),
+                    returnedImage.getHeight(),
+                    matrix, false);
+
+            //Creates a Time Stamp for the selfie's title
+            String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
+
+            //Creates a new SelfieItem with the previous bitmap and the current file
+            SelfieItem newItem = new SelfieItem(mCurrentFile, returnedImage, timeStamp);
+
+            //Add the new item to the list adapter
+            mSelfieAdapter.add(newItem);
+
+
         }
     }
 
@@ -108,8 +137,13 @@ public class DailySelfieActivity extends AppCompatActivity {
             }
             //Continue only if the file was successfully created
             if(photoFile != null){
-                //takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                       // Uri.fromFile(photoFile));
+                //Saves the file to pass it later at onActivityResult
+                mCurrentFile = photoFile;
+                //Saves the file's path to create later the thumb at onActivityResult
+                mCurrentFilePath = photoFile.getAbsolutePath();
+                //Put Extra in the Intent to save the full-size image
+                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                        Uri.fromFile(photoFile));
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
                 Log.i(TAG, "Intent delivered");
             }
@@ -119,24 +153,62 @@ public class DailySelfieActivity extends AppCompatActivity {
         }
     }
 
-    //Method to create a collision-resistant file name and save it
+    //Method to create a collision-resistant file
     private File createImage() throws IOException{
         //Creates an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        File storageDir = Environment.getExternalStoragePublicDirectory(
-                Environment.DIRECTORY_PICTURES);
+        //Creates a dedicated folder to store the selfies
+        //imageFileName = "DailySelfie_byMarcos" + File.separator + imageFileName;
+        File storageDir = new File(Environment.getExternalStoragePublicDirectory(
+                Environment.DIRECTORY_PICTURES)+File.separator+DIR_NAME);
+        storageDir.mkdirs();
+
+
+
         File image = new File(
                 storageDir /*directory*/,
-                imageFileName /*prefix*/
+                imageFileName /* prefix*/
                  + ".jpg"/*sufix*/
 
         );
 
-        //Saves a file: path for use with ACTION_VIEW intents
-        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
         Log.i(TAG, "File created");
         return image;
 
+    }
+
+    //Method to created a simpled Bitmap from a File. It is used to create the thumbnails
+    public static Bitmap decodeSampledBitmapFromFile(String path, int reqWidth, int reqHeight){
+
+        //First decode with inJustDecodeBounds=true to check dimensions without actually getting the bitmap
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(path, options);
+
+        // Calculate inSampleSize, Raw height and width of image (to resize the Bitmap)
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        int inSampleSize = 1;
+
+        if (height > reqHeight)
+        {
+            inSampleSize = Math.round((float)height / (float)reqHeight);
+        }
+        int expectedWidth = width / inSampleSize;
+
+        if (expectedWidth > reqWidth)
+        {
+
+            inSampleSize = Math.round((float)width / (float)reqWidth);
+        }
+
+        options.inSampleSize = inSampleSize;
+
+        // Decode bitmap with inSampleSize set, this time we do want the bitmap
+        options.inJustDecodeBounds = false;
+
+        return BitmapFactory.decodeFile(path, options);
     }
 }

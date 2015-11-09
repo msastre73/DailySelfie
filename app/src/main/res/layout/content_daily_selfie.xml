@@ -9,10 +9,10 @@
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:showIn="@layout/activity_daily_selfie" tools:context=".DailySelfieActivity">
 
-
-    <ImageView
+    <ListView
+        android:id="@android:id/list"
         android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:id="@+id/picCaptured"
-        android:layout_alignParentStart="true" />
+        android:layout_height="wrap_content"></ListView>
+
+
 </RelativeLayout>

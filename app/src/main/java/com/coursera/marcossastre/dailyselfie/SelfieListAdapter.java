@@ -99,8 +99,7 @@ public class SelfieListAdapter extends BaseAdapter {
             }
         });
 
-
-
-        return null;
+        //return the just created View
+        return selfieLayout;
     }
 }
