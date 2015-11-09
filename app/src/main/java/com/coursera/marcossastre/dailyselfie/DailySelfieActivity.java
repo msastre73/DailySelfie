@@ -80,15 +80,11 @@ public class DailySelfieActivity extends AppCompatActivity {
     //Set the returned Thumb to the ImageView
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        String resultStr = null;
-        if(resultCode == RESULT_OK){
-            resultStr = "RESULT_=OK";
-        }else{
-            resultStr = "RESULT_NO_OK";
-        }
 
-        Log.i(TAG, "Intent returnted with result: " + resultStr);
+
+
         if(requestCode== REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK){
+            Log.i(TAG, "Intent returned with result OK");
             Bundle extras = data.getExtras();
             Bitmap returnedImage = (Bitmap) extras.get("data");
             mPicCaptured.setImageBitmap(returnedImage);
@@ -112,8 +108,8 @@ public class DailySelfieActivity extends AppCompatActivity {
             }
             //Continue only if the file was successfully created
             if(photoFile != null){
-                takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-                        Uri.fromFile(photoFile));
+                //takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
+                       // Uri.fromFile(photoFile));
                 startActivityForResult(takePictureIntent, REQUEST_IMAGE_CAPTURE);
                 Log.i(TAG, "Intent delivered");
             }
@@ -130,10 +126,11 @@ public class DailySelfieActivity extends AppCompatActivity {
         String imageFileName = "JPEG_" + timeStamp + "_";
         File storageDir = Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES);
-        File image = File.createTempFile(
-                imageFileName, /*prefix*/
-                ".jpg", /*sufix*/
-                storageDir /*directory*/
+        File image = new File(
+                storageDir /*directory*/,
+                imageFileName /*prefix*/
+                 + ".jpg"/*sufix*/
+
         );
 
         //Saves a file: path for use with ACTION_VIEW intents
