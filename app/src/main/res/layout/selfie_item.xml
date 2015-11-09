@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/selfieLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!-- Here goest the thumb obtained from the cam -->
+    <ImageView
+        android:id="@+id/thumb"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"/>
+
+    <!-- Here goes the title of the selfie -->
+    <TextView
+        android:id="@+id/title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/thumb"
+        />
+
+    <!-- This is the button to delete the pic -->
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_alignParentRight="true"
+        android:src="@android:drawable/ic_delete"/>
+
+
+
+</RelativeLayout>
