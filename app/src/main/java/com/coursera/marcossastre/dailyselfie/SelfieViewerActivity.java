@@ -36,12 +36,12 @@ public class SelfieViewerActivity extends Activity {
         //Get the intent that started this Activity
         Intent intentReceived = getIntent();
         //Get the file put on the extra and convert it to a bitmap
-        File picToShow = (File) intentReceived.getExtras().get(DailySelfieActivity.PIC_TO_SHOW_KEY);
-        Bitmap bitmapPic = BitmapFactory.decodeFile(picToShow.getAbsolutePath());
+        String picToShowPath = (String) intentReceived.getExtras().get(DailySelfieActivity.PIC_TO_SHOW_KEY);
+        Bitmap bitmapPic = BitmapFactory.decodeFile(picToShowPath);
 
 
         mImageView.setImageBitmap(bitmapPic);
-        mImageView.setScaleType(ImageView.ScaleType.FIT_XY);
+        //mImageView.setScaleType(ImageView.ScaleType.FIT_XY);
 
     }
 

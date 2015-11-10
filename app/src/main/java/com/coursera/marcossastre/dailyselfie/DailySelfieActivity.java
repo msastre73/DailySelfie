@@ -93,16 +93,16 @@ public class DailySelfieActivity extends ListActivity{
     protected void onListItemClick(ListView l, View v, int position, long id) {
         Log.i(TAG, "Item clicked at position: " + position);
 
-        //Starts SelfieViewerActivity passing it the pic to show
+        //Starts SelfieViewerActivity passing it the pic to show path
         Intent selfieViewerIntent = new Intent(this, SelfieViewerActivity.class);
 
         SelfieItem selfieClicked = (SelfieItem) getListView().getItemAtPosition(position);
-        File picToShow = selfieClicked.getFullImage();
+        String picToShowPath = selfieClicked.getFullImagePath();
 
-        selfieViewerIntent.putExtra(PIC_TO_SHOW_KEY, picToShow);
+        selfieViewerIntent.putExtra(PIC_TO_SHOW_KEY, picToShowPath);
 
         startActivity(selfieViewerIntent);
-        Log.i(TAG, "Intent Sent");
+        Log.i(TAG, "Intent Sent to display the full size image");
 
     }
 
@@ -116,48 +116,23 @@ public class DailySelfieActivity extends ListActivity{
             //Reference to the pic saved in the path passed by the intent extra
             Bitmap savedPic = BitmapFactory.decodeFile(mCurrentFilePath);
 
-            //BORRAR
-            ImageView testView0 = (ImageView) findViewById(R.id.testView0);
-            testView0.setImageBitmap(savedPic);
-
-            //Validates that the pic is not rotated, and fix it if necessary
+            //Checks whether the pic is rotated , and fix it if necessary
             Bitmap savedPicValidated = imageOreintationValidator(savedPic, mCurrentFilePath);
 
-            //BORRAR
-            ImageView testView = (ImageView) findViewById(R.id.testView);
-            testView.setImageBitmap(savedPicValidated);
-             storeImage(savedPicValidated, mCurrentFilePath);
-            Bitmap afterValid = BitmapFactory.decodeFile(mCurrentFilePath);
-            ImageView testAV = (ImageView) findViewById(R.id.testValid);
-            testAV.setImageBitmap(afterValid);
-            Bitmap returnedImage = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
-            ImageView testT = (ImageView) findViewById(R.id.testThumb);
-            testT.setImageBitmap(returnedImage);
+            //Stores the validated bitmap
+            storeImage(savedPicValidated, mCurrentFilePath);
 
-            //Stores the valideted bitmap
-            //***storeImage(savedPic, mCurrentFilePath);
+            //Creates the thumb from the saved pic
+            Bitmap thumb = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
 
-
-            //Creates the image for the thumb from the saved pic
-            //174 is the width and height of the thumb provided by the cam
-           //*** Bitmap returnedImage = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
-            //When I create the Bitmap thumb it cames rotated (I don't know why)
-            //So I have to rotate it back
-            /*Matrix matrix = new Matrix();
-            matrix.postRotate(-90f);
-            returnedImage = Bitmap.createBitmap(returnedImage,0,0,
-                    returnedImage.getWidth(),
-                    returnedImage.getHeight(),
-                    matrix, false);*/
-
-            //Creates a Time Stamp for the selfie's title
+             //Creates a Time Stamp for the selfie's title
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 
             //Creates a new SelfieItem with the previous bitmap and the current file
-            //***SelfieItem newItem = new SelfieItem(mCurrentFile, returnedImage, timeStamp);
+            SelfieItem newItem = new SelfieItem(mCurrentFilePath, thumb, timeStamp);
 
             //Add the new item to the list adapter
-            //***mSelfieAdapter.add(newItem);
+            mSelfieAdapter.add(newItem);
 
 
         }

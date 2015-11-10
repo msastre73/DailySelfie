@@ -8,28 +8,28 @@ import java.io.File;
  * Created by Marcos Sastre on 09/11/2015.
  */
 public class SelfieItem {
-    //Thumbnail returned from the cam
+    //Thumbnail for the list
     private Bitmap thumb;
     //Title to display
     private String title;
     //Path to the full image saved by the cam
-    private File fullImage;
+    private String imagePath;
 
 
     //Constructor
-     public SelfieItem(File fullImage, Bitmap thumb, String title) {
-        this.fullImage = fullImage;
+     public SelfieItem(String fullImage, Bitmap thumb, String title) {
+        this.imagePath = fullImage;
         this.thumb = thumb;
         this.title = title;
     }
 
     //Getter and Setters
-  public File getFullImage() {
-        return fullImage;
+  public String getFullImagePath() {
+        return imagePath;
     }
 
-    public void setFullImage(File fullImage) {
-        this.fullImage = fullImage;
+    public void setFullImagePath(String fullImage) {
+        this.imagePath = fullImage;
     }
 
     public Bitmap getThumb() {
