@@ -10,29 +10,26 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ImageView;
-import android.widget.TextView;
+import android.widget.ListView;
 
 import java.io.File;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.logging.SimpleFormatter;
 
 public class DailySelfieActivity extends ListActivity{
     //Code for the cam request
     static final int REQUEST_IMAGE_CAPTURE = 1;
     //Folder name where pics are saved in the sd
     static final String DIR_NAME = "DailySelfie_ByMarcos";
+    //KEY used to pass the pic file to the SelfieViewerActivity
+    static final String PIC_TO_SHOW_KEY = "picToShow";
     //TAG for Log
-    private static final String TAG = "Lab-Graphics";
+    private static final String TAG = "DailySelfie - Main";
 
 
     private SelfieListAdapter mSelfieAdapter;
@@ -54,7 +51,7 @@ public class DailySelfieActivity extends ListActivity{
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //See the code of this function
+                //See the code of this method
                 Log.i(TAG, "FOA clicked");
                 dispatchTakePictureIntent();
 
@@ -86,6 +83,23 @@ public class DailySelfieActivity extends ListActivity{
         return super.onOptionsItemSelected(item);
     }
 
+    //Manages what happens when an item is clicked
+    @Override
+    protected void onListItemClick(ListView l, View v, int position, long id) {
+        Log.i(TAG, "Item clicked at position: " + position);
+
+        //Starts SelfieViewerActivity passing it the pic to show
+        Intent selfieViewerIntent = new Intent(this, SelfieViewerActivity.class);
+
+        SelfieItem selfieClicked = (SelfieItem) getListView().getItemAtPosition(position);
+        File picToShow = selfieClicked.getFullImage();
+
+        selfieViewerIntent.putExtra(PIC_TO_SHOW_KEY, picToShow);
+
+        startActivity(selfieViewerIntent);
+        Log.i(TAG, "Intent Sent");
+
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -179,7 +193,7 @@ public class DailySelfieActivity extends ListActivity{
     }
 
     //Method to created a simpled Bitmap from a File. It is used to create the thumbnails
-    public static Bitmap decodeSampledBitmapFromFile(String path, int reqWidth, int reqHeight){
+    public  Bitmap decodeSampledBitmapFromFile(String path, int reqWidth, int reqHeight){
 
         //First decode with inJustDecodeBounds=true to check dimensions without actually getting the bitmap
         final BitmapFactory.Options options = new BitmapFactory.Options();

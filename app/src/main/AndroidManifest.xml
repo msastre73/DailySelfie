@@ -3,8 +3,9 @@
     package="com.coursera.marcossastre.dailyselfie" >
 
     <!-- Declares that uses the cam and it is required -->
-    <uses-feature android:name="android.hardware.camera"
-                android:required="true" />
+    <uses-feature
+        android:name="android.hardware.camera"
+        android:required="true" />
 
     <!-- Declares needed permissions -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -18,13 +19,18 @@
         <activity
             android:name=".DailySelfieActivity"
             android:label="@string/app_name"
-            android:theme="@style/AppTheme.NoActionBar" >
+            android:theme="@style/AppTheme" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity android:name=".SelfieViewerActivity"
+            android:theme="@style/AppTheme">
+
+        </activity>
+
     </application>
 
 </manifest>

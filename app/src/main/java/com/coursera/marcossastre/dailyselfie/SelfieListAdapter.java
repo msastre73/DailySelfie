@@ -89,10 +89,11 @@ public class SelfieListAdapter extends BaseAdapter {
         //Set the title
         title.setText(currentSelfie.getTitle());
 
+
         //Reference to the Button
-        ImageButton removeButton = (ImageButton) convertView.findViewById(R.id.removeButton);
+       ImageButton removeButton = (ImageButton) convertView.findViewById(R.id.removeButton);
         //set OnClickListener to remove the current selfie when clicked
-        removeButton.setOnClickListener(new View.OnClickListener() {
+       removeButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 clear(position);
