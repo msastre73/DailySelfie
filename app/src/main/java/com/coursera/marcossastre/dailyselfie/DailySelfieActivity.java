@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.media.ExifInterface;
+import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
@@ -14,9 +16,12 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.ImageView;
 import android.widget.ListView;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -108,27 +113,51 @@ public class DailySelfieActivity extends ListActivity{
 
         if(requestCode== REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK){
             Log.i(TAG, "Intent returned with result OK");
+            //Reference to the pic saved in the path passed by the intent extra
+            Bitmap savedPic = BitmapFactory.decodeFile(mCurrentFilePath);
+
+            //BORRAR
+            ImageView testView0 = (ImageView) findViewById(R.id.testView0);
+            testView0.setImageBitmap(savedPic);
+
+            //Validates that the pic is not rotated, and fix it if necessary
+            Bitmap savedPicValidated = imageOreintationValidator(savedPic, mCurrentFilePath);
+
+            //BORRAR
+            ImageView testView = (ImageView) findViewById(R.id.testView);
+            testView.setImageBitmap(savedPicValidated);
+             storeImage(savedPicValidated, mCurrentFilePath);
+            Bitmap afterValid = BitmapFactory.decodeFile(mCurrentFilePath);
+            ImageView testAV = (ImageView) findViewById(R.id.testValid);
+            testAV.setImageBitmap(afterValid);
+            Bitmap returnedImage = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
+            ImageView testT = (ImageView) findViewById(R.id.testThumb);
+            testT.setImageBitmap(returnedImage);
+
+            //Stores the valideted bitmap
+            //***storeImage(savedPic, mCurrentFilePath);
+
 
             //Creates the image for the thumb from the saved pic
             //174 is the width and height of the thumb provided by the cam
-            Bitmap returnedImage = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
+           //*** Bitmap returnedImage = decodeSampledBitmapFromFile(mCurrentFilePath, 174, 174);
             //When I create the Bitmap thumb it cames rotated (I don't know why)
             //So I have to rotate it back
-            Matrix matrix = new Matrix();
+            /*Matrix matrix = new Matrix();
             matrix.postRotate(-90f);
             returnedImage = Bitmap.createBitmap(returnedImage,0,0,
                     returnedImage.getWidth(),
                     returnedImage.getHeight(),
-                    matrix, false);
+                    matrix, false);*/
 
             //Creates a Time Stamp for the selfie's title
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 
             //Creates a new SelfieItem with the previous bitmap and the current file
-            SelfieItem newItem = new SelfieItem(mCurrentFile, returnedImage, timeStamp);
+            //***SelfieItem newItem = new SelfieItem(mCurrentFile, returnedImage, timeStamp);
 
             //Add the new item to the list adapter
-            mSelfieAdapter.add(newItem);
+            //***mSelfieAdapter.add(newItem);
 
 
         }
@@ -145,7 +174,7 @@ public class DailySelfieActivity extends ListActivity{
 
             try{
                 photoFile = createImage();
-                Log.i(TAG, "Image created");
+                Log.i(TAG, "Thumb File created");
             } catch (IOException ex){
                 System.out.println("IOException occurred:"+ ex.toString());
             }
@@ -167,7 +196,7 @@ public class DailySelfieActivity extends ListActivity{
         }
     }
 
-    //Method to create a collision-resistant file
+    //Method to create a collision-resistant file using a tempStamp
     private File createImage() throws IOException{
         //Creates an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
@@ -190,6 +219,47 @@ public class DailySelfieActivity extends ListActivity{
         Log.i(TAG, "File created");
         return image;
 
+    }
+
+    //Method to rotate back an image when it is rotated by the cam (this happen in some devices)
+    private Bitmap imageOreintationValidator(Bitmap bitmap, String path) {
+
+        ExifInterface ei;
+        try {
+            ei = new ExifInterface(path);
+            int orientation = ei.getAttributeInt(ExifInterface.TAG_ORIENTATION,
+                    ExifInterface.ORIENTATION_NORMAL);
+            switch (orientation) {
+                case ExifInterface.ORIENTATION_ROTATE_90:
+                    bitmap = rotateImage(bitmap, 90);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_180:
+                    bitmap = rotateImage(bitmap, 180);
+                    break;
+                case ExifInterface.ORIENTATION_ROTATE_270:
+                    bitmap = rotateImage(bitmap, 270);
+                    break;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+        return bitmap;
+    }
+
+    //Method to rotate an image
+    private Bitmap rotateImage(Bitmap source, float angle) {
+
+        Bitmap bitmap = null;
+        Matrix matrix = new Matrix();
+        matrix.postRotate(angle);
+        try {
+            bitmap = Bitmap.createBitmap(source, 0, 0, source.getWidth(), source.getHeight(),
+                    matrix, true);
+        } catch (OutOfMemoryError err) {
+            err.printStackTrace();
+        }
+        return bitmap;
     }
 
     //Method to created a simpled Bitmap from a File. It is used to create the thumbnails
@@ -225,4 +295,19 @@ public class DailySelfieActivity extends ListActivity{
 
         return BitmapFactory.decodeFile(path, options);
     }
+
+    //Method to store a bitmap in the designated path
+    private void storeImage(Bitmap image, String path) {
+    File pictureFile = new File(path);
+
+    try {
+        FileOutputStream fos = new FileOutputStream(pictureFile);
+        image.compress(Bitmap.CompressFormat.JPEG, 90, fos);
+        fos.close();
+    } catch (FileNotFoundException e) {
+        Log.d(TAG, "File not found: " + e.getMessage());
+    } catch (IOException e) {
+        Log.d(TAG, "Error accessing file: " + e.getMessage());
+    }
+}
 }
