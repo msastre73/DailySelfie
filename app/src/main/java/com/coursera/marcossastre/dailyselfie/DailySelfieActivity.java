@@ -19,14 +19,23 @@ import android.view.MenuItem;
 import android.widget.ImageView;
 import android.widget.ListView;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
 public class DailySelfieActivity extends ListActivity{
+    //File to save items (persistence)
+    static final String FILE_NAME = "DailySelfieItems.txt";
     //Code for the cam request
     static final int REQUEST_IMAGE_CAPTURE = 1;
     //Folder name where pics are saved in the sd
@@ -38,18 +47,14 @@ public class DailySelfieActivity extends ListActivity{
 
 
     private SelfieListAdapter mSelfieAdapter;
-    //file created when the FloatinActionButton is clicked, then passes to the SelfiItem
-    //created in onActivityResult
-    private File mCurrentFile;
     private String mCurrentFilePath;
-    private float mLayoutHeigt;
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_daily_selfie);
         mSelfieAdapter = new SelfieListAdapter(getApplicationContext());
+
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -59,11 +64,15 @@ public class DailySelfieActivity extends ListActivity{
                 //See the code of this method
                 Log.i(TAG, "FOA clicked");
                 dispatchTakePictureIntent();
-
             }
         });
 
         getListView().setAdapter(mSelfieAdapter);
+
+        //load the SelfieItems from previous sessions
+        loadItems();
+
+
     }
 
     @Override
@@ -72,6 +81,7 @@ public class DailySelfieActivity extends ListActivity{
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
     }
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -134,10 +144,21 @@ public class DailySelfieActivity extends ListActivity{
             //Add the new item to the list adapter
             mSelfieAdapter.add(newItem);
 
+            //Now we are back on this activity, tells the system that if it enters to onPause
+            //it must save the items
+
+
 
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        saveItems();
+    }
+
+    //AUX METHODS
     //Method to invoke an intent to capture the pic passing it the path to save it
     private void dispatchTakePictureIntent() {
         //Creates the Intent to take a pic
@@ -155,9 +176,7 @@ public class DailySelfieActivity extends ListActivity{
             }
             //Continue only if the file was successfully created
             if(photoFile != null){
-                //Saves the file to pass it later at onActivityResult
-                mCurrentFile = photoFile;
-                //Saves the file's path to create later the thumb at onActivityResult
+                //Saves the file's path
                 mCurrentFilePath = photoFile.getAbsolutePath();
                 //Put Extra in the Intent to save the full-size image
                 takePictureIntent.putExtra(MediaStore.EXTRA_OUTPUT,
@@ -285,4 +304,64 @@ public class DailySelfieActivity extends ListActivity{
         Log.d(TAG, "Error accessing file: " + e.getMessage());
     }
 }
+
+
+
+    //PERSISTENCE METHODS
+    // Load stored SelfieItems
+    private void loadItems() {
+        BufferedReader reader = null;
+        try {
+            FileInputStream fis = openFileInput(FILE_NAME);
+            reader = new BufferedReader(new InputStreamReader(fis));
+
+            String imagePath = null;
+            Bitmap thumb = null;
+            String title = null;
+
+
+            while (null != (imagePath = reader.readLine())) {
+                thumb = decodeSampledBitmapFromFile(imagePath, 174, 174);
+                title = reader.readLine();
+                mSelfieAdapter.add(new SelfieItem(imagePath, thumb, title));
+
+            }
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (null != reader) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+
+    // Save SelfieItems to file
+    private void saveItems() {
+        PrintWriter writer = null;
+        try {
+            FileOutputStream fos = openFileOutput(FILE_NAME, MODE_PRIVATE);
+            writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+                    fos)));
+
+            for (int idx = 0; idx < mSelfieAdapter.getCount(); idx++) {
+
+                writer.println(mSelfieAdapter.getItem(idx));
+
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (null != writer) {
+                writer.close();
+            }
+        }
+    }
 }

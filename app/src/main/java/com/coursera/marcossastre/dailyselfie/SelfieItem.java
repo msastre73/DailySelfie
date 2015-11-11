@@ -8,6 +8,8 @@ import java.io.File;
  * Created by Marcos Sastre on 09/11/2015.
  */
 public class SelfieItem {
+    public static final String ITEM_SEP = System.getProperty("line.separator");
+
     //Thumbnail for the list
     private Bitmap thumb;
     //Title to display
@@ -21,6 +23,11 @@ public class SelfieItem {
         this.imagePath = fullImage;
         this.thumb = thumb;
         this.title = title;
+    }
+
+    //ToString (used to save the itemslist)
+    public String toString(){
+        return imagePath + ITEM_SEP + title;
     }
 
     //Getter and Setters

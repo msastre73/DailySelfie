@@ -20,28 +20,21 @@ import java.io.File;
 public class SelfieViewerActivity extends Activity {
 
     private ImageView mImageView;
-    private LinearLayout mParent;
 
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.sefie_viewer);
         mImageView = (ImageView) findViewById(R.id.imageView);
-        mParent = (LinearLayout) mImageView.getParent();
 
-        //Set Layout params
-        /*mParent.setLayoutParams(new ViewGroup.MarginLayoutParams(
-                WindowManager.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.MATCH_PARENT));*/
         //Get the intent that started this Activity
         Intent intentReceived = getIntent();
         //Get the file put on the extra and convert it to a bitmap
         String picToShowPath = (String) intentReceived.getExtras().get(DailySelfieActivity.PIC_TO_SHOW_KEY);
         Bitmap bitmapPic = BitmapFactory.decodeFile(picToShowPath);
 
-
         mImageView.setImageBitmap(bitmapPic);
-        //mImageView.setScaleType(ImageView.ScaleType.FIT_XY);
+
 
     }
 

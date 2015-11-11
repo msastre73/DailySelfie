@@ -1,6 +1,7 @@
 package com.coursera.marcossastre.dailyselfie;
 
 import android.content.Context;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -10,6 +11,7 @@ import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,8 +20,10 @@ import java.util.List;
  */
 public class SelfieListAdapter extends BaseAdapter {
 
+    private static final String TAG = "DailySelfie-ListAdapter";
     private final List<SelfieItem> mItems = new ArrayList<SelfieItem>();
     private final Context mContext;
+
 
 
     //Constructor
@@ -66,7 +70,7 @@ public class SelfieListAdapter extends BaseAdapter {
     @Override
     public View getView(final int position, View convertView, ViewGroup parent) {
         //Get the current Selfie Item
-        SelfieItem currentSelfie = (SelfieItem) getItem(position);
+        final SelfieItem currentSelfie = (SelfieItem) getItem(position);
 
         //In order to recycle the View if it is passes, only inflates convertView
         //if it is null
@@ -97,6 +101,9 @@ public class SelfieListAdapter extends BaseAdapter {
             @Override
             public void onClick(View v) {
                 clear(position);
+                File deleted = new File (currentSelfie.getFullImagePath());
+                boolean result = deleted.delete();
+                Log.i(TAG, "Result of the delete: " + String.valueOf(result));
             }
         });
 
