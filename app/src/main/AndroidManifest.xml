@@ -26,11 +26,16 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".SelfieViewerActivity"
-            android:theme="@style/AppTheme">
-
+        <activity
+            android:name=".SelfieViewerActivity"
+            android:theme="@style/AppTheme" >
         </activity>
 
+        <receiver
+            android:name=".TodayNotificationReceiver"
+            android:enabled="true"
+            android:exported="true" >
+        </receiver>
     </application>
 
 </manifest>

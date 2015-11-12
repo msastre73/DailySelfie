@@ -1,6 +1,8 @@
 package com.coursera.marcossastre.dailyselfie;
 
+import android.app.AlarmManager;
 import android.app.ListActivity;
+import android.app.PendingIntent;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -10,6 +12,7 @@ import android.media.Image;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
 import android.util.Log;
@@ -49,12 +52,38 @@ public class DailySelfieActivity extends ListActivity{
     private SelfieListAdapter mSelfieAdapter;
     private String mCurrentFilePath;
 
+    //Variables used for the notification alarm
+    private AlarmManager mAlarmManager;
+    private final static long ALARM_DELAY = 2 * 60 * 1000L;
+
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_daily_selfie);
         mSelfieAdapter = new SelfieListAdapter(getApplicationContext());
 
+        getListView().setAdapter(mSelfieAdapter);
+
+        //Loads the SelfieItems from previous sessions
+        loadItems();
+
+        //Gets reference to the Alarm Manager
+        mAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+
+        //Creates an Intent to broadcast to TodayNotificationReceiver
+        Intent mNotificationReceiverIntent = new Intent(DailySelfieActivity.this,
+                TodayNotificationReceiver.class);
+
+        //If the repetitive alarm wasn't set before, set it
+        boolean isAlarmSet = (PendingIntent.getBroadcast(DailySelfieActivity.this, 0,
+                mNotificationReceiverIntent, PendingIntent.FLAG_NO_CREATE) != null);
+        if(!isAlarmSet){
+            scheduleDailyNotifications(mNotificationReceiverIntent);
+            Log.i(TAG, "Alarm set");
+
+        }
 
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
@@ -66,11 +95,6 @@ public class DailySelfieActivity extends ListActivity{
                 dispatchTakePictureIntent();
             }
         });
-
-        getListView().setAdapter(mSelfieAdapter);
-
-        //load the SelfieItems from previous sessions
-        loadItems();
 
 
     }
@@ -304,6 +328,20 @@ public class DailySelfieActivity extends ListActivity{
         Log.d(TAG, "Error accessing file: " + e.getMessage());
     }
 }
+
+    //Method to set the regular Alarm to fire peridical notifications
+    private void scheduleDailyNotifications(Intent NotificationReceiverIntent){
+        //Creates a Pendind Intent that holds passed
+        PendingIntent mNotificationReceiverPendingIntent = PendingIntent.getBroadcast(
+                DailySelfieActivity.this, 0, NotificationReceiverIntent, 0);
+
+        //Creates the repeating alarm
+        mAlarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME,
+                SystemClock.elapsedRealtime() + ALARM_DELAY,
+                ALARM_DELAY, mNotificationReceiverPendingIntent);
+
+
+    }
 
 
 
