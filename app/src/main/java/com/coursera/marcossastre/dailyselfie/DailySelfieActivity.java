@@ -3,6 +3,7 @@ package com.coursera.marcossastre.dailyselfie;
 import android.app.AlarmManager;
 import android.app.ListActivity;
 import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -15,12 +16,15 @@ import android.os.Environment;
 import android.os.SystemClock;
 import android.provider.MediaStore;
 import android.support.design.widget.FloatingActionButton;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ListView;
+import android.widget.Switch;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -52,9 +56,8 @@ public class DailySelfieActivity extends ListActivity{
     private SelfieListAdapter mSelfieAdapter;
     private String mCurrentFilePath;
 
-    //Variables used for the notification alarm
-    private AlarmManager mAlarmManager;
-    private final static long ALARM_DELAY = 2 * 60 * 1000L;
+
+
 
 
 
@@ -62,6 +65,7 @@ public class DailySelfieActivity extends ListActivity{
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_daily_selfie);
+
         mSelfieAdapter = new SelfieListAdapter(getApplicationContext());
 
         getListView().setAdapter(mSelfieAdapter);
@@ -69,22 +73,63 @@ public class DailySelfieActivity extends ListActivity{
         //Loads the SelfieItems from previous sessions
         loadItems();
 
-        //Gets reference to the Alarm Manager
-        mAlarmManager = (AlarmManager) getSystemService(ALARM_SERVICE);
+        Switch notificationSwitch = (Switch) findViewById(R.id.notificationSwitch);
+        Context param = DailySelfieActivity.this;
+        Log.i(TAG, "null?");
+        //DailySwitchListener switchCustomListener = null;
 
-        //Creates an Intent to broadcast to TodayNotificationReceiver
-        Intent mNotificationReceiverIntent = new Intent(DailySelfieActivity.this,
-                TodayNotificationReceiver.class);
+        notificationSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
+            private static final String TAG = "Switch Listener";
 
-        //If the repetitive alarm wasn't set before, set it
-        boolean isAlarmSet = (PendingIntent.getBroadcast(DailySelfieActivity.this, 0,
-                mNotificationReceiverIntent, PendingIntent.FLAG_NO_CREATE) != null);
-        if(!isAlarmSet){
-            scheduleDailyNotifications(mNotificationReceiverIntent);
-            Log.i(TAG, "Alarm set");
+        private PendingIntent mNotificationReceiverPendingIntent;
+        private Context mContext = DailySelfieActivity.this;
 
+        private AlarmManager mAlarmManager =
+                (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
+        private final static long ALARM_DELAY = 2 * 20 * 1000L;
+
+        @Override
+        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+            //If the switch changes to ON creates the alarm, else cancel it
+            //Creates an Intent to broadcast to TodayNotificationReceiver
+            final Intent mNotificationReceiverIntent = new Intent(mContext,
+                    TodayNotificationReceiver.class);
+
+            //Checks if the Pending Intents existe (i.e the alarm is set)
+            boolean isAlarmSet = (PendingIntent.getBroadcast(mContext, 0,
+                    mNotificationReceiverIntent, PendingIntent.FLAG_NO_CREATE) != null);
+            Log.i(TAG, "Chec boolean");
+            if (isChecked) {
+                if(!isAlarmSet){
+                    scheduleDailyNotifications(mNotificationReceiverIntent);
+                    Log.i(TAG, "Alarm set");
+                }
+
+            }else{
+                if(isAlarmSet){
+                    mAlarmManager.cancel(mNotificationReceiverPendingIntent);
+                    mNotificationReceiverPendingIntent.cancel();
+                    Log.i(TAG, "Alarm canceled");
+                }
+
+
+
+            }
         }
 
+        //Method to set the repetitive Alarm to fire periodical notifications
+    private void scheduleDailyNotifications(Intent notificationReceiverIntent){
+        mNotificationReceiverPendingIntent = PendingIntent.getBroadcast(
+                mContext, 0, notificationReceiverIntent, 0);
+
+        //Creates the repeating alarm
+        mAlarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME,
+                SystemClock.elapsedRealtime() + ALARM_DELAY,
+                ALARM_DELAY, mNotificationReceiverPendingIntent);
+
+
+    }
+});
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -181,6 +226,12 @@ public class DailySelfieActivity extends ListActivity{
         super.onPause();
         saveItems();
     }
+
+
+
+
+
+
 
     //AUX METHODS
     //Method to invoke an intent to capture the pic passing it the path to save it
@@ -329,19 +380,10 @@ public class DailySelfieActivity extends ListActivity{
     }
 }
 
-    //Method to set the regular Alarm to fire peridical notifications
-    private void scheduleDailyNotifications(Intent NotificationReceiverIntent){
-        //Creates a Pendind Intent that holds passed
-        PendingIntent mNotificationReceiverPendingIntent = PendingIntent.getBroadcast(
-                DailySelfieActivity.this, 0, NotificationReceiverIntent, 0);
-
-        //Creates the repeating alarm
-        mAlarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME,
-                SystemClock.elapsedRealtime() + ALARM_DELAY,
-                ALARM_DELAY, mNotificationReceiverPendingIntent);
 
 
-    }
+
+
 
 
 
