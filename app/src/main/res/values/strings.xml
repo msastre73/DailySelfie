@@ -2,6 +2,7 @@
     <string name="app_name">DailySelfie</string>
     <string name="delete_all">Delte All!</string>
     <string name="notif_switch">Notification Reminder</string>
+    <string name="take_pic">Take a Pic!</string>
 
     <string name="title_activity_selfie_vier">SelfieVierActivity</string>
     <string name="dummy_button">Dummy Button</string>

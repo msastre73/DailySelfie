@@ -5,6 +5,7 @@ import android.app.ListActivity;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
@@ -25,6 +26,7 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.Switch;
+import android.widget.TextView;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -49,13 +51,18 @@ public class DailySelfieActivity extends ListActivity{
     static final String DIR_NAME = "DailySelfie_ByMarcos";
     //KEY used to pass the pic file to the SelfieViewerActivity
     static final String PIC_TO_SHOW_KEY = "picToShow";
+    //KEY used to save the boolean checked to decide if show the initial text or not
+    static final String SHOW_INITIAL_TEXT = "show initial text";
     //TAG for Log
     private static final String TAG = "DailySelfie - Main";
 
-
+    private TextView mInitialText;
     private SelfieListAdapter mSelfieAdapter;
     private String mCurrentFilePath;
 
+    private SharedPreferences prefs;
+    private AlarmManager mAlarmManager;
+    private final static long ALARM_DELAY = 2 * 60 * 1000L;
 
 
 
@@ -64,83 +71,40 @@ public class DailySelfieActivity extends ListActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_daily_selfie);
+        setContentView(R.layout.main);
 
         mSelfieAdapter = new SelfieListAdapter(getApplicationContext());
 
         getListView().setAdapter(mSelfieAdapter);
+        mInitialText = (TextView) findViewById(R.id.initialText);
 
         //Loads the SelfieItems from previous sessions
         loadItems();
 
-        Switch notificationSwitch = (Switch) findViewById(R.id.notificationSwitch);
-        Context param = DailySelfieActivity.this;
-        Log.i(TAG, "null?");
-        //DailySwitchListener switchCustomListener = null;
+        //Gets a SharedPreferences object
+        prefs = getPreferences(MODE_PRIVATE);
 
-        notificationSwitch.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener(){
-            private static final String TAG = "Switch Listener";
-
-        private PendingIntent mNotificationReceiverPendingIntent;
-        private Context mContext = DailySelfieActivity.this;
-
-        private AlarmManager mAlarmManager =
-                (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
-        private final static long ALARM_DELAY = 2 * 20 * 1000L;
-
-        @Override
-        public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-            //If the switch changes to ON creates the alarm, else cancel it
-            //Creates an Intent to broadcast to TodayNotificationReceiver
-            final Intent mNotificationReceiverIntent = new Intent(mContext,
-                    TodayNotificationReceiver.class);
-
-            //Checks if the Pending Intents existe (i.e the alarm is set)
-            boolean isAlarmSet = (PendingIntent.getBroadcast(mContext, 0,
-                    mNotificationReceiverIntent, PendingIntent.FLAG_NO_CREATE) != null);
-            Log.i(TAG, "Chec boolean");
-            if (isChecked) {
-                if(!isAlarmSet){
-                    scheduleDailyNotifications(mNotificationReceiverIntent);
-                    Log.i(TAG, "Alarm set");
-                }
-
-            }else{
-                if(isAlarmSet){
-                    mAlarmManager.cancel(mNotificationReceiverPendingIntent);
-                    mNotificationReceiverPendingIntent.cancel();
-                    Log.i(TAG, "Alarm canceled");
-                }
-
-
-
-            }
+        //Checks if it is the first time the app is created, in that case shows initialText
+         if(prefs.getBoolean(SHOW_INITIAL_TEXT,true)){
+           mInitialText.setVisibility(View.VISIBLE);
         }
 
-        //Method to set the repetitive Alarm to fire periodical notifications
-    private void scheduleDailyNotifications(Intent notificationReceiverIntent){
-        mNotificationReceiverPendingIntent = PendingIntent.getBroadcast(
-                mContext, 0, notificationReceiverIntent, 0);
-
-        //Creates the repeating alarm
-        mAlarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME,
-                SystemClock.elapsedRealtime() + ALARM_DELAY,
-                ALARM_DELAY, mNotificationReceiverPendingIntent);
 
 
-    }
-});
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                //See the code of this method
-                Log.i(TAG, "FOA clicked");
-                dispatchTakePictureIntent();
-            }
-        });
+        mAlarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
 
+        //Intent to wrap in the Pending Intent of the Alarm
+        final Intent mNotificationReceiverIntent = new Intent(DailySelfieActivity.this,
+                TodayNotificationReceiver.class);
+
+        //Checks if the Pending Intents exists (i.e the alarm is set), and if not creates it
+        boolean isAlarmSet = (PendingIntent.getBroadcast(DailySelfieActivity.this, 0,
+                mNotificationReceiverIntent, PendingIntent.FLAG_NO_CREATE) != null);
+        if(!isAlarmSet) {
+            scheduleDailyNotifications(mNotificationReceiverIntent);
+            Log.i(TAG, "Alarm set");
+        }
 
     }
 
@@ -159,8 +123,15 @@ public class DailySelfieActivity extends ListActivity{
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        //noinspection SimplifiableIfStatement
+
         if (id == R.id.delte_all) {
+            mSelfieAdapter.clearAll();
+            Log.i(TAG, "All selfies were deleted");
+            return true;
+        }else if(id==R.id.take_pic){
+            Log.i(TAG, "Cam menu clicked");
+            //Sends the Intent to the camera and sets the path to save the pic
+            dispatchTakePictureIntent();
             return true;
         }
 
@@ -188,10 +159,15 @@ public class DailySelfieActivity extends ListActivity{
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-
-
         if(requestCode== REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK){
             Log.i(TAG, "Intent returned with result OK");
+            //Takes away the initial text view and set SharedPreferences in order to not show
+            //it again when onCreate is called
+            mInitialText.setVisibility(View.GONE);
+            SharedPreferences.Editor editor = prefs.edit();
+            editor.putBoolean(SHOW_INITIAL_TEXT, false);
+            editor.commit();
+
             //Reference to the pic saved in the path passed by the intent extra
             Bitmap savedPic = BitmapFactory.decodeFile(mCurrentFilePath);
 
@@ -207,16 +183,11 @@ public class DailySelfieActivity extends ListActivity{
              //Creates a Time Stamp for the selfie's title
             String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
 
-            //Creates a new SelfieItem with the previous bitmap and the current file
+            //Creates a new SelfieItem
             SelfieItem newItem = new SelfieItem(mCurrentFilePath, thumb, timeStamp);
 
             //Add the new item to the list adapter
             mSelfieAdapter.add(newItem);
-
-            //Now we are back on this activity, tells the system that if it enters to onPause
-            //it must save the items
-
-
 
         }
     }
@@ -226,12 +197,6 @@ public class DailySelfieActivity extends ListActivity{
         super.onPause();
         saveItems();
     }
-
-
-
-
-
-
 
     //AUX METHODS
     //Method to invoke an intent to capture the pic passing it the path to save it
@@ -245,7 +210,6 @@ public class DailySelfieActivity extends ListActivity{
 
             try{
                 photoFile = createImage();
-                Log.i(TAG, "Thumb File created");
             } catch (IOException ex){
                 System.out.println("IOException occurred:"+ ex.toString());
             }
@@ -270,13 +234,10 @@ public class DailySelfieActivity extends ListActivity{
         //Creates an image file name
         String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss").format(new Date());
         String imageFileName = "JPEG_" + timeStamp + "_";
-        //Creates a dedicated folder to store the selfies
-        //imageFileName = "DailySelfie_byMarcos" + File.separator + imageFileName;
+        //Creates a dedicated folder to store selfies
         File storageDir = new File(Environment.getExternalStoragePublicDirectory(
                 Environment.DIRECTORY_PICTURES)+File.separator+DIR_NAME);
         storageDir.mkdirs();
-
-
 
         File image = new File(
                 storageDir /*directory*/,
@@ -331,7 +292,7 @@ public class DailySelfieActivity extends ListActivity{
         return bitmap;
     }
 
-    //Method to created a simpled Bitmap from a File. It is used to create the thumbnails
+    //Method to created a sampled Bitmap from a File. It is used to create the thumbnails
     public  Bitmap decodeSampledBitmapFromFile(String path, int reqWidth, int reqHeight){
 
         //First decode with inJustDecodeBounds=true to check dimensions without actually getting the bitmap
@@ -378,13 +339,20 @@ public class DailySelfieActivity extends ListActivity{
     } catch (IOException e) {
         Log.d(TAG, "Error accessing file: " + e.getMessage());
     }
+
 }
+    //Method to set the repetitive Alarm to fire periodical notifications
+    private void scheduleDailyNotifications(Intent notificationReceiverIntent){
+        PendingIntent mNotificationReceiverPendingIntent = PendingIntent.getBroadcast(
+                DailySelfieActivity.this, 0, notificationReceiverIntent, 0);
+
+        //Creates the repeating alarm
+        mAlarmManager.setRepeating(AlarmManager.ELAPSED_REALTIME,
+                SystemClock.elapsedRealtime() + ALARM_DELAY,
+                ALARM_DELAY, mNotificationReceiverPendingIntent);
 
 
-
-
-
-
+    }
 
 
     //PERSISTENCE METHODS

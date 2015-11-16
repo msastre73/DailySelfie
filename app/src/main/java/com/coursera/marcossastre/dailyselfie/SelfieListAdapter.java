@@ -45,8 +45,14 @@ public class SelfieListAdapter extends BaseAdapter {
 
     //Clear all selfies
     public void clearAll(){
-        mItems.clear();
-        notifyDataSetChanged();
+        int countBeforeDeleting = getCount();
+        for (int i = 0; i < countBeforeDeleting ; i++){
+            final SelfieItem currentSelfie = (SelfieItem) getItem(0);
+            File deleted = new File (currentSelfie.getFullImagePath());
+            clear(0);
+            boolean result = deleted.delete();
+            }
+
     }
 
     //Methods that must be overridden from the Interface
@@ -58,6 +64,7 @@ public class SelfieListAdapter extends BaseAdapter {
     @Override
     public Object getItem(int position) {
         return mItems.get(position);
+
     }
 
     @Override
@@ -72,7 +79,7 @@ public class SelfieListAdapter extends BaseAdapter {
         //Get the current Selfie Item
         final SelfieItem currentSelfie = (SelfieItem) getItem(position);
 
-        //In order to recycle the View if it is passes, only inflates convertView
+        //In order to recycle the View if it is passed, only inflates convertView
         //if it is null
         if(convertView == null){
             LayoutInflater inflater = (LayoutInflater)
@@ -103,7 +110,7 @@ public class SelfieListAdapter extends BaseAdapter {
                 clear(position);
                 File deleted = new File (currentSelfie.getFullImagePath());
                 boolean result = deleted.delete();
-                Log.i(TAG, "Result of the delete: " + String.valueOf(result));
+                Log.i(TAG, "Result of the deletion: " + String.valueOf(result));
             }
         });
 
